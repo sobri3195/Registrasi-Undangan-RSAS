@@ -1,0 +1,4 @@
+invitation_code,name,invited_label,organization,guest_group,guest_category,roster_status
+DEMO-001,,Perwakilan PT Contoh Sehat A,PT Contoh Sehat,Mitra provider dan korporasi,REGULER,draft
+DEMO-002,,Perwakilan PT Contoh Sehat B,PT Contoh Sehat,Mitra provider dan korporasi,REGULER,draft
+DEMO-003,Tamu Sintetis C,Undangan individu,Organisasi Demo,Tamu umum,VIP,draft

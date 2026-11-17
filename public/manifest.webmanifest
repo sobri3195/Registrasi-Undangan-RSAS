@@ -1,0 +1,19 @@
+{
+  "id": "/petugas",
+  "name": "Registrasi Undangan RSAS",
+  "short_name": "RSAS Registrasi",
+  "lang": "id",
+  "start_url": "/petugas",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f6f7f2",
+  "theme_color": "#173d35",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
