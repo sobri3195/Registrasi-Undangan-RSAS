@@ -117,8 +117,8 @@ export default function Dashboard() {
             </span>
           </div>
           <p>
-            Rekap gabungan per waktu impor. Angka dari tablet lain baru masuk
-            setelah berkas digabungkan.
+            Rekap gabungan per waktu impor atau sinkronisasi cloud terakhir.
+            Penutupan tetap memerlukan ekspor final semua meja.
           </p>
         </section>
         <div className="stats-grid">
@@ -170,9 +170,11 @@ export default function Dashboard() {
           </div>
           <div className="station-grid">
             {stations.map((st) => {
-              const receipt = state.receipts
+              const receipts = state.receipts
                 .filter((r) => r.station === st)
-                .sort((a, b) => b.at.localeCompare(a.at))[0]
+                .sort((a, b) => b.at.localeCompare(a.at))
+              const receipt =
+                receipts.find((r) => r.source !== 'cloud') || receipts[0]
               const unused = state.unusedStations.includes(st)
               return (
                 <div className="station-card" key={st}>
@@ -180,7 +182,9 @@ export default function Dashboard() {
                     <strong>{st}</strong>
                     <Badge tone={receipt ? '' : 'muted'}>
                       {receipt
-                        ? 'Sudah diimpor'
+                        ? receipt.source === 'cloud'
+                          ? 'Tersinkron cloud'
+                          : 'Sudah diimpor'
                         : unused
                           ? 'Cadangan belum dipakai'
                           : 'Belum diimpor'}
@@ -195,8 +199,8 @@ export default function Dashboard() {
                   </small>
                   <small>
                     {receipt
-                      ? `Berkas ${wib(receipt.exportedAt)}`
-                      : 'Tidak ada sinkronisasi otomatis'}
+                      ? `${receipt.source === 'cloud' ? 'Cloud' : 'Berkas'} ${wib(receipt.exportedAt)}`
+                      : 'Menunggu impor final / sinkronisasi'}
                   </small>
                   <label className="checkbox">
                     <input

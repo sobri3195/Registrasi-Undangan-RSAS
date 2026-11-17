@@ -40,6 +40,7 @@ export default defineConfig({
       output: {
         manualChunks: {
           decoder: ['jsqr'],
+          supabase: ['@supabase/supabase-js'],
           react: ['react', 'react-dom', 'react-router-dom'],
         },
       },

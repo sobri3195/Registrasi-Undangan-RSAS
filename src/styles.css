@@ -1757,6 +1757,76 @@ td:first-child {
     font-size: 10px;
   }
 }
+.cloud-status {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border: 1px solid #dce5d3;
+  background: #eef3e7;
+  padding: 15px 18px;
+  border-radius: 9px;
+  margin-bottom: 22px;
+  color: #36543d;
+}
+.cloud-status > div {
+  flex: 1;
+  min-width: 0;
+}
+.cloud-status strong {
+  font-size: 12px;
+  display: block;
+}
+.cloud-status small {
+  display: block;
+  font-size: 11px;
+  color: #596c50;
+  margin-top: 3px;
+}
+.cloud-warning {
+  border-color: #dfc39a;
+  background: #fbf5e8;
+}
+.cloud-settings .settings-grid {
+  gap: 28px;
+}
+.cloud-settings label {
+  font-size: 12px;
+}
+.cloud-settings .checkbox {
+  font-size: 12px;
+  line-height: 1.6;
+  margin: 14px 0;
+}
+.cloud-actions {
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
+  margin-top: 22px;
+}
+.cloud-actions > div > strong {
+  font-size: 13px;
+}
+.cloud-actions > div > p {
+  margin-top: 6px;
+}
+.cloud-settings > .muted {
+  margin-top: 20px;
+  margin-bottom: 0;
+}
+@media (max-width: 560px) {
+  .cloud-status {
+    flex-wrap: wrap;
+    padding: 14px;
+  }
+  .cloud-status > div {
+    min-width: 230px;
+  }
+  .cloud-status > .button {
+    width: 100%;
+  }
+  .cloud-settings .settings-grid {
+    gap: 20px;
+  }
+}
 @media print {
   body {
     background: white;

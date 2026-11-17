@@ -4,6 +4,7 @@ import { useStore } from './store'
 import { audit, stations, wib } from './model'
 import { useOffline } from './offline'
 import { Badge } from './components'
+import { CloudSettings } from './CloudSettings'
 const roles = {
   T01: 'VIP / VVIP bersama protokol',
   T02: 'Reguler A',
@@ -230,6 +231,7 @@ export default function Settings() {
           )}
         </section>
       </div>
+      <CloudSettings />
       <section className="panel">
         <h2>Audit lokal</h2>
         <p>

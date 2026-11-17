@@ -132,6 +132,7 @@ const receiptSchema = z.object({
   at: iso,
   exportedAt: iso,
   count: z.number().int().nonnegative(),
+  source: z.enum(['file', 'cloud']).default('file'),
 })
 export const stateSchema = z.object({
   schema_version: z.literal(1),

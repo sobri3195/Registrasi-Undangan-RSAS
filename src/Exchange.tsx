@@ -311,7 +311,11 @@ export default function Exchange() {
           .map((r, i) => (
             <p key={`${r.device}-${i}`}>
               <strong>{r.station}</strong> · {r.count} catatan · diimpor{' '}
-              {wib(r.at)} <small>Berkas dibuat {wib(r.exportedAt)}</small>
+              {wib(r.at)}{' '}
+              <small>
+                {r.source === 'cloud' ? 'Dari Supabase' : 'Berkas dibuat'}{' '}
+                {wib(r.exportedAt)}
+              </small>
             </p>
           ))}
         {!state.receipts.length && <p>Belum ada berkas yang digabungkan.</p>}

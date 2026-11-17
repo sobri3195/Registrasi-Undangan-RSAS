@@ -20,6 +20,9 @@ import {
   ShieldCheck,
 } from 'lucide-react'
 import { StoreProvider } from './context'
+import { CloudProvider } from './CloudProvider'
+import { CloudStatus } from './CloudSettings'
+import { useCloud } from './cloud-store'
 import { useStore } from './store'
 import { useOffline } from './offline'
 import Dashboard from './Dashboard'
@@ -31,6 +34,7 @@ import Rsvp from './Rsvp'
 import './styles.css'
 
 export function Shell() {
+  const cloud = useCloud()
   const { state } = useStore(),
     offline = useOffline(),
     location = useLocation()
@@ -64,7 +68,11 @@ export function Shell() {
         <div className="sidebar-note">
           <ShieldCheck size={21} />
           <strong>Data di perangkat Anda.</strong>
-          <p>Tanpa backend. Ekspor berkala untuk menjaga catatan kehadiran.</p>
+          <p>
+            {cloud.config?.enabled
+              ? 'Sinkronisasi Supabase opsional. Ekspor berkala tetap diperlukan.'
+              : 'Data lokal. Supabase dapat diaktifkan melalui Pengaturan.'}
+          </p>
           <span className="local-mode">MODE LOKAL</span>
         </div>
         <div className="sidebar-bottom">
@@ -94,6 +102,7 @@ export function Shell() {
           </div>
         </header>
         <main className="content">
+          <CloudStatus />
           {coordinator && (
             <>
               <div className="page-heading">
@@ -143,7 +152,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <Route
           element={
             <StoreProvider>
-              <Shell />
+              <CloudProvider>
+                <Shell />
+              </CloudProvider>
             </StoreProvider>
           }
         >
