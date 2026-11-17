@@ -1,6 +1,6 @@
 # Registrasi Undangan RSAS
 
-Aplikasi statis Vite + React + TypeScript untuk registrasi undangan **19 November 2026**. RSVP melalui WhatsApp yang dikirim sendiri oleh tamu; kehadiran fisik tersimpan di IndexedDB setiap tablet dan digabungkan melalui JSON di T05. Tidak ada backend, API aplikasi, autentikasi terpusat, atau sinkronisasi otomatis.
+Aplikasi Vite + React + TypeScript untuk registrasi undangan **19 November 2026**. RSVP melalui WhatsApp yang dikirim sendiri oleh tamu; kehadiran fisik tersimpan di IndexedDB setiap tablet dan digabungkan melalui JSON di T05. **Supabase opsional** menyediakan login petugas, distribusi paket hash roster dan sinkronisasi kehadiran setiap 15 detik saat online. Mode lokal tetap tersedia; build Vercel hanya memerlukan aset statis.
 
 ## Menjalankan
 
@@ -43,6 +43,8 @@ Salin `.env.example` ke `.env.local` bila perlu. Konfigurasi publik build:
 
 Variabel `VITE_*` bersifat publik. Jangan mengisinya dengan rahasia atau data roster. Preview harus menggunakan data sintetis dan origin terpisah dari produksi. Tidak ada deployment/Preview publik yang diverifikasi dalam implementasi ini; URL deployment hanya boleh dibagikan setelah diuji pada layanan sebenarnya.
 
+Backend opsional memakai `VITE_SUPABASE_URL` dan `VITE_SUPABASE_PUBLISHABLE_KEY`, atau URL/key yang disimpan langsung pada menu **Pengaturan → Supabase** setiap tablet. Sinkronisasi awalnya nonaktif. Ikuti [pemasangan database, akun dan Vercel](docs/SETUP_SUPABASE.md) serta [SQL migrasi](supabase/migrations/202611170001_attendance.sql). Publishable key tidak memberikan hak membuat tabel/akun. Jangan menggunakan secret/service_role key di browser.
+
 ## Alur utama
 
 1. **T05 → Pengaturan**: tetapkan operator, T05, dan origin HTTPS resmi. Aktifkan jam otomatis.
@@ -66,7 +68,7 @@ Aplikasi mendeteksi CSV pada ketiga jalur impor JSON dan menunjukkan petunjuk se
 
 ## Offline dan ketahanan data
 
-IndexedDB berskema versi menyimpan keadaan lokal secara atomik. DB v2 menambahkan indeks unik gabungan acara/slot untuk kehadiran lokal aktif. ID perangkat stabil per origin/profil browser; catatan mempunyai UUID. Penghapusan data browser/instalasi atau perpindahan origin dapat menghilangkan akses ke data. Jangan menggunakan mode privat.
+IndexedDB berskema versi menyimpan keadaan lokal secara atomik. DB v2 menambahkan indeks unik gabungan acara/slot untuk kehadiran lokal aktif; DB v3 menambahkan konfigurasi/progres cloud terpisah dari backup master. ID perangkat stabil per origin/profil browser; catatan mempunyai UUID. Penghapusan data browser/instalasi atau perpindahan origin dapat menghilangkan akses ke data. Jangan menggunakan mode privat.
 
 Service worker mencache **hanya aset publik aplikasi**, termasuk decoder dan shell SPA. Nama cache berasal dari hash konten build. Roster, token, RSVP, hasil ekspor dan transaksi tidak dicache sebagai respons HTTP. Status **Siap offline** memerlukan cache lengkap, versi paket yang dimuat, dan nama operator. Itu status kesiapan teknis, bukan bukti uji fisik.
 
@@ -78,7 +80,7 @@ Paket baru harus mempertahankan ID/kode lama; batalkan slot dengan status `cance
 
 - Mode lokal adalah pembagian alur, **bukan pengamanan akses**. Gunakan perangkat panitia yang dikunci, profil kerja, dan kanal transfer internal yang disetujui.
 - Token acak 192-bit dibuat melalui Web Crypto. Token undangan adalah kemampuan untuk mencocokkan slot, bukan bukti identitas orang. Petugas wajib mencocokkan orang yang datang.
-- Tidak ada nomor kontak panitia, nama panitia, daftar undangan TOR, atau data pasien di aplikasi. Impor data operasional hanya lokal; folder `operational-data/` diabaikan Git dan tidak berada di `public/`.
+- Tidak ada nomor kontak panitia, nama panitia, daftar undangan TOR, atau data pasien dalam source/fixture publik. Impor operasional dilakukan lokal. Setelah sinkronisasi diaktifkan, paket hash dan kehadiran dikirim ke proyek Supabase yang dikonfigurasi. Folder `operational-data/` diabaikan Git dan tidak berada di `public/`.
 - Ekspor stasiun tidak memuat roster/token/hash. Backup master memuat token asli dan data operasional sehingga harus dibatasi. Pemulihan dilakukan pada master kosong; ID perangkat tujuan tetap dipertahankan. Jangan menimpa data perangkat yang belum diamankan.
 - Berkas maksimum 5 MB; maksimum 5.000 slot dan 20.000 catatan per ekspor stasiun. Validasi event, skema, versi paket, jenis aksi, ID slot/kode, asal perangkat, target koreksi dan konflik ID berlangsung sebelum transaksi.
 - Semua impor satu batch atomik. ID sama/data sama dikenali; ID sama/data berbeda membatalkan batch, mempertahankan catatan tersimpan. Berkas asli perlu diperiksa panitia, bukan diedit untuk menghilangkan konflik.

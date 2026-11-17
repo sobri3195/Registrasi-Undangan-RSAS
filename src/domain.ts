@@ -310,7 +310,11 @@ export function previewImport(state: State, files: unknown[]) {
   ).size
   return { parsed, newRecords, duplicates, conflicts, review }
 }
-export function merge(state: State, files: unknown[]) {
+export function merge(
+  state: State,
+  files: unknown[],
+  source: 'file' | 'cloud' = 'file',
+) {
   requireOperator(state)
   const result = previewImport(state, files)
   // A conflicting batch is rejected entirely; existing originals remain intact.
@@ -326,10 +330,11 @@ export function merge(state: State, files: unknown[]) {
       at: new Date().toISOString(),
       exportedAt: f.exported_at,
       count: f.records.length,
+      source,
     })
   audit(
     state,
-    'merge',
+    source === 'cloud' ? 'merge-cloud' : 'merge',
     `${result.newRecords.length} baru; ${result.duplicates} sudah ada`,
   )
   return result
@@ -356,7 +361,7 @@ export function metrics(state: State) {
       !['T01', 'T02', 'T03', 'T04', 'T05', 'T06'].every(
         (s) =>
           state.unusedStations.includes(s as State['config']['station']) ||
-          state.receipts.some((r) => r.station === s),
+          state.receipts.some((r) => r.station === s && r.source !== 'cloud'),
       ),
   }
 }

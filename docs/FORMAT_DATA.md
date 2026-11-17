@@ -56,6 +56,12 @@ Pemulihan memvalidasi skema, keunikan slot/versi, kecocokan token-hash dan refer
 
 Audit memuat UUID, waktu, operator, aksi dan detail. Bukti pengesahan penyebut tercatat sebagai aksi `denominator` dengan nilai sebelum/sesudah dan alasan. Audit ini jejak lokal; pengguna yang menguasai perangkat/berkas dapat mengubah data. Tidak ada tanda tangan digital atau verifikasi identitas terpusat.
 
+## Progres Supabase dan backup
+
+DB browser v3 menambah store `cloud` untuk Project URL, publishable key, flag aktif dan progres terikat proyek/akun (cursor, ID yang sudah dikonfirmasi, waktu sinkron). Sesi login dikelola SDK secara terpisah. Store ini dan sesi tidak termasuk `state` dalam master backup atau ekspor stasiun.
+
+Receipt gabungan mempunyai field tambahan `source: "file" | "cloud"`; backup lama tanpa field tersebut dibaca sebagai `file`. Receipt cloud tidak dianggap sebagai bukti ekspor final meja dalam pengesahan rekap. Format paket dan catatan tetap v1. SQL, batas batch dan hak akses server dijelaskan di [setup Supabase](SETUP_SUPABASE.md).
+
 ## CSV keluaran
 
 UTF-8 BOM untuk Excel. Kolom kode, nama undangan, perwakilan aktual, instansi, kategori, status slot/RSVP/hadir, waktu WIB dan ISO, stasiun, sumber, penanda tinjauan, waktu ekspor, cakupan tablet dan status rekap. Nilai berawalan formula spreadsheet diberi petik tunggal. Catatan tambahan tetap ada dengan status `extra`, terpisah dari KPI resmi.

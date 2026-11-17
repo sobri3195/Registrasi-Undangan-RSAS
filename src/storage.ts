@@ -2,8 +2,8 @@ import { openDB } from 'idb'
 import { initialState, stateSchema } from './model'
 import type { State } from './model'
 
-const db = () =>
-  openDB('rsas-registration', 2, {
+export const openDatabase = () =>
+  openDB('rsas-registration', 3, {
     upgrade(db, oldVersion) {
       if (oldVersion < 1) db.createObjectStore('state')
       if (oldVersion < 2) {
@@ -14,10 +14,11 @@ const db = () =>
           unique: true,
         })
       }
+      if (oldVersion < 3) db.createObjectStore('cloud')
     },
   })
 export async function load(): Promise<State> {
-  const database = await db()
+  const database = await openDatabase()
   const tx = database.transaction('state', 'readwrite')
   const existing = await tx.store.get('current')
   const state = existing ? stateSchema.parse(existing) : initialState()
@@ -28,7 +29,7 @@ export async function load(): Promise<State> {
 export async function mutate<T>(
   change: (state: State) => T,
 ): Promise<{ state: State; result: T }> {
-  const database = await db()
+  const database = await openDatabase()
   const tx = database.transaction(['state', 'local_presence'], 'readwrite')
   try {
     const state = stateSchema.parse(

@@ -34,23 +34,26 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     window.addEventListener('focus', refresh)
     return () => window.removeEventListener('focus', refresh)
   }, [notify])
-  async function commit<T>(change: (s: State) => T) {
-    try {
-      const updated = await mutate(change)
-      setState(updated.state)
-      return updated.result
-    } catch (error) {
-      notify(
-        error instanceof DOMException
-          ? `Gagal tersimpan. ${error.message} Coba ulang; jika tetap gagal gunakan tablet cadangan atau daftar hadir kertas. Ekspor data yang masih dapat dibaca.`
-          : error instanceof Error
-            ? error.message
-            : 'Gagal tersimpan. Coba ulang atau gunakan daftar hadir kertas.',
-        true,
-      )
-      throw error
-    }
-  }
+  const commit = useCallback(
+    async <T,>(change: (s: State) => T) => {
+      try {
+        const updated = await mutate(change)
+        setState(updated.state)
+        return updated.result
+      } catch (error) {
+        notify(
+          error instanceof DOMException
+            ? `Gagal tersimpan. ${error.message} Coba ulang; jika tetap gagal gunakan tablet cadangan atau daftar hadir kertas. Ekspor data yang masih dapat dibaca.`
+            : error instanceof Error
+              ? error.message
+              : 'Gagal tersimpan. Coba ulang atau gunakan daftar hadir kertas.',
+          true,
+        )
+        throw error
+      }
+    },
+    [notify],
+  )
   if (failure)
     return (
       <main className="fatal">

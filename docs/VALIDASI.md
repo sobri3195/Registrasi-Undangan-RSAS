@@ -7,14 +7,17 @@ Dijalankan pada 17 November 2026 dalam lingkungan cloud, memakai **data sintetis
 | `npm ci --cache /tmp/rsas-npm-cache --no-audit --no-fund`                | Berhasil memasang dari lockfile                                              |
 | `npm run typecheck`                                                      | Lulus                                                                        |
 | `npm run lint`                                                           | Lulus tanpa error/peringatan lint                                            |
-| `npm test`                                                               | **38 lulus**, 3 berkas; tidak ada skip                                       |
+| `npm test`                                                               | **56 lulus**, 7 berkas; tidak ada skip                                       |
 | `npm run build`                                                          | Lulus; `dist` berisi HTML, JS, CSS, manifest, ikon dan service worker statis |
 | `node --check dist/sw.js`                                                | Lulus untuk worker yang dihasilkan build                                     |
-| `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium npm run test:e2e` | **7 lulus**, tanpa skip; menjalankan build produksi melalui Vite preview     |
+| `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium npm run test:e2e` | **9 lulus**, tanpa skip; menjalankan build produksi melalui Vite preview     |
 
 Build mengeluarkan pemberitahuan anotasi pure dari dependensi Zod; build tetap sukses. Tidak ada artefak Functions/API. Cache npm default tidak dapat ditulis pada mesin ini, sehingga digunakan `/tmp/rsas-npm-cache`. Unduhan browser Playwright diblokir kebijakan domain; pengujian memakai Chromium yang sudah terpasang, bukan menonaktifkan verifikasi unduhan.
 
 ## Bukti alur
+
+- **Backend opsional:** 8 pengujian menjalankan SQL migrasi/RLS pada PostgreSQL PGlite: anonim ditolak, non-anggota tidak membaca data/tidak dapat menaikkan peran, publikasi hanya koordinator, token asli ditolak, duplikat idempoten, konflik rollback atomik, kepemilikan perangkat/stasiun/versi ditegakkan, koreksi terbatas koordinator, dan pemasangan ulang mempertahankan data. Ini bukan pengujian terhadap proyek Supabase produksi.
+- **Transport/sinkronisasi:** pengujian browser memakai fixture HTTP Supabase sintetis untuk login koordinator/operator, publikasi paket hash, pengambilan roster oleh tablet kedua, upload gagal, antrean offline, retry, penggabungan ke T05 dan persistensi setelah reload. Halaman RSVP tidak mengirim request Supabase. Backup tidak memuat sesi login atau pengaturan cloud. Unit test memeriksa timeout 15 detik, cache no-store dan isolasi progres menurut proyek/akun.
 
 - **Pemilihan format impor:** CSV yang dipilih sebagai paket roster, catatan tablet, atau backup master mendapat petunjuk menuju **Koordinator → Daftar undangan → Impor CSV**, bukan pesan `Unexpected token`. CSV yang diganti nama menjadi JSON juga terdeteksi. JSON valid dengan BOM tetap diterima; JSON rusak ditolak tanpa potongan isi berkas. Uji browser membuktikan 71 baris sintetis hanya tersimpan setelah pratinjau/konfirmasi CSV, tetap draf sesudah reload, dan belum membuat token, paket, penyebut atau kehadiran.
 
@@ -37,3 +40,7 @@ Build mengeluarkan pemberitahuan anotasi pure dari dependensi Zod; build tetap s
 4. Uji transfer berkas antartablet/T05, kesamaan versi paket, jam otomatis, persistensi/kuota, T06, daya dan daftar kertas. Verifikasi backup master serta prosedur pergantian QR/paket dan pembaruan PWA seusai sesi.
 
 Lihat [runbook](../RUNBOOK_ACARA.md) untuk jadwal 08.15, 08.30 dan 08.40 WIB. Uji otomatis tidak menggantikan penerimaan operasional enam tablet.
+
+## Status proyek Supabase yang diberikan pengguna
+
+URL dan publishable key disimpan pada konfigurasi lokal yang diabaikan Git serta draf environment, tanpa mengunggah roster operasional. Permintaan read-only ke endpoint Auth proyek asli diblokir oleh proxy environment dengan `403 Forbidden` pada CONNECT. Respons ini tidak membuktikan key diterima atau ditolak oleh Supabase. SQL migrasi belum dijalankan pada proyek asli dan belum ada akun/penugasan produksi yang diverifikasi. Pemilik proyek perlu menjalankan SQL, membuat akun dan mengaktifkan konfigurasi di Vercel/tablet menurut [panduan pemasangan](SETUP_SUPABASE.md).
