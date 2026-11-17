@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react'
+import { Link } from 'react-router-dom'
 import {
   Camera,
   Search,
@@ -150,7 +151,7 @@ export default function Petugas() {
           label="Impor paket roster"
           accept=".json,application/json"
           onFiles={(files) => {
-            readJSON(files[0])
+            readJSON(files[0], 'roster-package')
               .then((p) => commit((s) => importPackage(s, p)))
               .then(() =>
                 notify('Paket dimuat. Cocokkan versinya dengan semua tablet.'),
@@ -159,6 +160,14 @@ export default function Petugas() {
           }}
         />
       </div>
+      <p className="muted">
+        Impor paket tablet berformat <strong>JSON</strong> yang dibuat T05.
+        Punya daftar undangan CSV?{' '}
+        <Link to="/koordinator/undangan" className="button secondary">
+          Impor CSV di koordinator
+        </Link>{' '}
+        Sahkan slot di T05, lalu buat paket JSON untuk petugas.
+      </p>
       {!state.config.operator && (
         <p className="notice">
           Isi nama operator dan label tablet pada Pengaturan sebelum mencatat

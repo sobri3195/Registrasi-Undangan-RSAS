@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import {
   Download,
   FileJson,
@@ -40,14 +41,16 @@ export default function Exchange() {
   }
   async function inspect(files: File[]) {
     await run(async () => {
-      const data = await Promise.all(files.map(readJSON))
+      const data = await Promise.all(
+        files.map((file) => readJSON(file, 'station-log')),
+      )
       setPreview(previewImport(state, data))
       setFiles(data)
     })
   }
   async function inspectBackup(file: File) {
     await run(async () => {
-      const b = backupSchema.parse(await readJSON(file))
+      const b = backupSchema.parse(await readJSON(file, 'master-backup'))
       if (!b.state.slots.some((s) => s.token))
         throw new Error('Berkas ini bukan backup master penerbit undangan.')
       if (
@@ -98,6 +101,15 @@ export default function Exchange() {
           </p>
         </div>
         <Badge>Format JSON v1</Badge>
+      </div>
+      <div className="notice">
+        Halaman ini menerima catatan tablet atau backup dalam format JSON. Untuk
+        roster-draft.csv atau daftar undangan lain, gunakan{' '}
+        <Link to="/koordinator/undangan" className="button secondary">
+          Impor CSV di koordinator
+        </Link>
+        . CSV harus dipratinjau dan disahkan sebelum dibuat menjadi paket
+        tablet.
       </div>
       <div className="exchange-grid">
         <section className="panel">

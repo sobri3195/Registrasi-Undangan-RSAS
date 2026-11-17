@@ -118,7 +118,10 @@ export default function Roster() {
         <div>
           <h2>Daftar undangan</h2>
           <p>
-            Draf adalah rujukan. Sahkan setiap slot sebelum menerbitkan kartu.
+            Draf adalah rujukan. Sahkan setiap slot sebelum menerbitkan kartu.{' '}
+            Impor daftar undangan berformat CSV di sini, termasuk
+            roster-draft.csv. Paket tablet dan backup memakai JSON di menu
+            terpisah.
           </p>
         </div>
         <div className="actions">

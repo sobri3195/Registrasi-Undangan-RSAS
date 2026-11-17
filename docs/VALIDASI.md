@@ -7,14 +7,16 @@ Dijalankan pada 17 November 2026 dalam lingkungan cloud, memakai **data sintetis
 | `npm ci --cache /tmp/rsas-npm-cache --no-audit --no-fund`                | Berhasil memasang dari lockfile                                              |
 | `npm run typecheck`                                                      | Lulus                                                                        |
 | `npm run lint`                                                           | Lulus tanpa error/peringatan lint                                            |
-| `npm test`                                                               | **28 lulus**, 2 berkas; tidak ada skip                                       |
+| `npm test`                                                               | **38 lulus**, 3 berkas; tidak ada skip                                       |
 | `npm run build`                                                          | Lulus; `dist` berisi HTML, JS, CSS, manifest, ikon dan service worker statis |
 | `node --check dist/sw.js`                                                | Lulus untuk worker yang dihasilkan build                                     |
-| `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium npm run test:e2e` | **2 lulus**, tanpa skip; menjalankan build produksi melalui Vite preview     |
+| `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium npm run test:e2e` | **7 lulus**, tanpa skip; menjalankan build produksi melalui Vite preview     |
 
 Build mengeluarkan pemberitahuan anotasi pure dari dependensi Zod; build tetap sukses. Tidak ada artefak Functions/API. Cache npm default tidak dapat ditulis pada mesin ini, sehingga digunakan `/tmp/rsas-npm-cache`. Unduhan browser Playwright diblokir kebijakan domain; pengujian memakai Chromium yang sudah terpasang, bukan menonaktifkan verifikasi unduhan.
 
 ## Bukti alur
+
+- **Pemilihan format impor:** CSV yang dipilih sebagai paket roster, catatan tablet, atau backup master mendapat petunjuk menuju **Koordinator → Daftar undangan → Impor CSV**, bukan pesan `Unexpected token`. CSV yang diganti nama menjadi JSON juga terdeteksi. JSON valid dengan BOM tetap diterima; JSON rusak ditolak tanpa potongan isi berkas. Uji browser membuktikan 71 baris sintetis hanya tersimpan setelah pratinjau/konfirmasi CSV, tetap draf sesudah reload, dan belum membuat token, paket, penyebut atau kehadiran.
 
 - **Perusahaan:** impor tiga draf sintetis, sahkan dua slot satu PT dan satu tamu bernama, terbitkan kartu/paket. Dua slot PT mempunyai token berbeda; paket tidak menyertakan token asli. Filter kelompok mitra/perusahaan menampilkan dua slot PT.
 - **Tamu:** buka tautan `/rsvp` dengan fragmen kartu di viewport ponsel, siapkan draf RSVP, verifikasi pesan siap dikirim dan unduh PNG check-in. Nomor WA publik tidak dikonfigurasi dalam pengujian sehingga jalur balas chat tersedia; pengiriman WhatsApp sungguhan tidak dijalankan. Data RSVP master tetap `unknown` setelah aksi guest dan check-in.
