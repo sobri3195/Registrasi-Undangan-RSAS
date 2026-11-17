@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Camera,
@@ -8,22 +8,35 @@ import {
   ArrowRight,
 } from 'lucide-react'
 import { useStore } from './store'
+import { useCloud } from './cloud-store'
 import {
   checkin,
   effective,
   hash,
   importPackage,
-  parseCheckin,
+  parseScannerQR,
   stationExport,
 } from './domain'
 import { wib } from './model'
 import type { AttendanceRecord, Slot } from './model'
 import { FileInput, Badge, Modal, Empty } from './components'
 import Scanner from './Scanner'
+import ScannerSetup from './ScannerSetup'
+import { decodeQRImage } from './qr-image'
 import { filename, jsonDownload, readJSON } from './files'
 
 export default function Petugas() {
   const { state, commit, notify } = useStore()
+  const cloud = useCloud()
+  const resolvingRef = useRef(false)
+  const [showSetup, setShowSetup] = useState(false)
+  const [resolving, setResolving] = useState(false),
+    [readingImage, setReadingImage] = useState(false)
+  const ready = Boolean(
+    state.config.operator.trim() &&
+    state.package_version &&
+    state.slots.some((s) => ['active', 'extra'].includes(s.status)),
+  )
   const [query, setQuery] = useState(''),
     [company, setCompany] = useState(''),
     [group, setGroup] = useState('')
@@ -39,12 +52,31 @@ export default function Petugas() {
     [payload, setPayload] = useState('')
   const onScan = useCallback(
     (value: string) => {
+      if (resolvingRef.current) return
+      resolvingRef.current = true
       setCamera(false)
+      setResolving(true)
       ;(async () => {
-        const t = parseCheckin(value),
-          h = await hash(t)
-        const slot = state.slots.find(
-          (s) => s.tokenHash === h && ['active', 'extra'].includes(s.status),
+        const qr = parseScannerQR(value, [
+            state.config.officialOrigin,
+            location.origin,
+          ]),
+          h = await hash(qr.token)
+        let snapshot = state
+        if (navigator.onLine && cloud.config?.enabled && cloud.email) {
+          const fresh = await cloud.sync()
+          if (fresh) snapshot = fresh
+          else
+            notify(
+              'Cloud belum terbarui. Pencocokan memakai paket lokal; periksa status Supabase.',
+              true,
+            )
+        }
+        const slot = snapshot.slots.find(
+          (s) =>
+            s.tokenHash === h &&
+            (!qr.code || s.code === qr.code) &&
+            ['active', 'extra'].includes(s.status),
         )
         if (!slot)
           throw new Error(
@@ -54,11 +86,17 @@ export default function Petugas() {
         setRepresentative(slot.representative || slot.name)
         setSource('qr')
         setResult(null)
-      })().catch((e) => notify(e.message, true))
+      })()
+        .catch((e) => notify(e.message, true))
+        .finally(() => {
+          resolvingRef.current = false
+          setResolving(false)
+        })
     },
-    [state.slots, notify],
+    [state, notify, cloud],
   )
   function choose(slot: Slot) {
+    if (resolvingRef.current || readingImage) return
     setCamera(false)
     setSelected(slot)
     setRepresentative(slot.representative || slot.name)
@@ -102,6 +140,7 @@ export default function Petugas() {
           ? 'Catatan pertama ditemukan. Kehadiran tidak ditambahkan lagi.'
           : 'Hadir tercatat di tablet ini. Ekspor berkala untuk digabungkan di T05.',
       )
+      if (cloud.config?.enabled && cloud.email) void cloud.syncPending()
     } catch {
       /* Store displays an actionable error; leave dialog open for retry. */
     } finally {
@@ -136,6 +175,11 @@ export default function Petugas() {
           Ekspor catatan tablet
         </button>
       </div>
+      <ScannerSetup
+        expanded={!ready || showSetup}
+        ready={ready}
+        onToggle={() => setShowSetup((value) => !value)}
+      />
       <div className="operator-banner">
         <div>
           <strong>{localCount} kehadiran di tablet ini</strong>
@@ -180,16 +224,52 @@ export default function Petugas() {
         </div>
         <div>
           <h2>Check-in dengan QR</h2>
-          <p>Gunakan QR check-in dari layar ponsel atau kartu cetak.</p>
+          <p>
+            Gunakan QR check-in atau QR undangan resmi dari layar ponsel atau
+            kartu cetak.
+          </p>
         </div>
         <button
-          onClick={() => setCamera(true)}
-          disabled={!state.package_version}
+          onClick={() => {
+            if (!ready) {
+              setShowSetup(true)
+              document
+                .getElementById('scanner-setup')
+                ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              notify(
+                'Lengkapi nama operator dan muat roster melalui persiapan pemindai di atas.',
+                true,
+              )
+              return
+            }
+            setCamera(true)
+          }}
+          disabled={resolving || readingImage}
         >
           <Camera size={18} />
           Pindai QR
         </button>
+        <FileInput
+          label="Pindai foto QR"
+          accept="image/png,image/jpeg,image/webp"
+          disabled={!ready || resolving || readingImage}
+          onFiles={(files) => {
+            setCamera(false)
+            setReadingImage(true)
+            decodeQRImage(files[0])
+              .then(onScan)
+              .catch((e) => notify(e.message, true))
+              .finally(() => setReadingImage(false))
+          }}
+        />
       </div>
+      {(resolving || readingImage) && (
+        <p className="notice" aria-live="polite">
+          {readingImage
+            ? 'Membaca foto QR di perangkat…'
+            : 'Mencocokkan QR dengan roster terbaru…'}
+        </p>
+      )}
       {camera && <Scanner onScan={onScan} onClose={() => setCamera(false)} />}
       <section className="panel">
         <div className="section-header">
@@ -260,6 +340,7 @@ export default function Petugas() {
             {filtered.slice(0, 100).map((s) => (
               <button
                 className="guest-row"
+                disabled={resolving || readingImage}
                 key={s.id}
                 onClick={() => choose(s)}
               >
@@ -301,6 +382,7 @@ export default function Petugas() {
           </label>
           <button
             className="secondary"
+            disabled={!ready || resolving || readingImage}
             onClick={() => {
               onScan(payload)
               setPayload('')

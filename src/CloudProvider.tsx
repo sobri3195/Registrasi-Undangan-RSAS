@@ -21,7 +21,8 @@ import {
   writeProgress,
 } from './cloud-model'
 import type { CloudConfig, Progress } from './cloud-model'
-import { EVENT } from './model'
+import { EVENT, audit } from './model'
+import type { State } from './model'
 
 export function CloudProvider({ children }: { children: ReactNode }) {
   const { state, commit } = useStore()
@@ -33,6 +34,7 @@ export function CloudProvider({ children }: { children: ReactNode }) {
   const [progress, setProgress] = useState<Progress>(emptyProgress('', ''))
   const lock = useRef(false),
     current = useRef(state)
+  const syncFlight = useRef<Promise<State | null> | null>(null)
   useEffect(() => {
     current.current = state
   }, [state])
@@ -99,56 +101,68 @@ export function CloudProvider({ children }: { children: ReactNode }) {
     }
   }, [client, userId, config])
 
-  const sync = useCallback(async () => {
-    if (lock.current || !client || !config?.enabled || !userId) return
+  const sync = useCallback((): Promise<State | null> => {
+    if (syncFlight.current) return syncFlight.current
+    if (lock.current || !client || !config?.enabled || !userId)
+      return Promise.resolve(null)
     lock.current = true
     setBusy(true)
-    try {
-      if (!navigator.onLine) throw new Error('Offline')
-      if (!current.current.config.operator.trim())
-        throw new Error(
-          'Isi nama operator pada Pengaturan sebelum sinkronisasi.',
-        )
-      const m = await fetchMember(client)
-      if (m.station_id !== current.current.config.station)
-        throw new Error('RSAS_INVALID_RECORD')
-      setMember(m)
-      let p = await readProgress(config.url, userId)
-      const pull = async () => {
-        const remote = await fetchRemote(client, p.cursor)
-        await commit((s) => applyCloud(s, remote.packages, remote.rows))
-        p = { ...p, cursor: remote.cursor }
-        await writeProgress(p)
-        setProgress(p)
-      }
-      await pull()
-      const records = pendingRecords(current.current, p.acked)
-      for (let offset = 0; offset < records.length; offset += 200) {
-        const batch = records.slice(offset, offset + 200)
-        const { error } = await client.rpc('rsas_push_records', {
-          p_event: EVENT,
-          p_device: current.current.device_id,
-          p_records: batch,
-        })
-        if (error) throw error
-        p = {
-          ...p,
-          acked: [...new Set([...p.acked, ...batch.map((r) => r.record_id)])],
+    const operation = (async (): Promise<State | null> => {
+      try {
+        if (!navigator.onLine) throw new Error('Offline')
+        if (!current.current.config.operator.trim())
+          throw new Error(
+            'Isi nama operator pada Pengaturan sebelum sinkronisasi.',
+          )
+        const m = await fetchMember(client)
+        if (m.station_id !== current.current.config.station)
+          throw new Error('RSAS_INVALID_RECORD')
+        setMember(m)
+        let p = await readProgress(config.url, userId)
+        const pull = async () => {
+          const remote = await fetchRemote(client, p.cursor)
+          current.current = await commit((s) => {
+            applyCloud(s, remote.packages, remote.rows)
+            return structuredClone(s)
+          })
+          p = { ...p, cursor: remote.cursor }
+          await writeProgress(p)
+          setProgress(p)
         }
+        await pull()
+        const records = pendingRecords(current.current, p.acked)
+        for (let offset = 0; offset < records.length; offset += 200) {
+          const batch = records.slice(offset, offset + 200)
+          const { error } = await client.rpc('rsas_push_records', {
+            p_event: EVENT,
+            p_device: current.current.device_id,
+            p_records: batch,
+          })
+          if (error) throw error
+          p = {
+            ...p,
+            acked: [...new Set([...p.acked, ...batch.map((r) => r.record_id)])],
+          }
+          await writeProgress(p)
+          setProgress(p)
+        }
+        await pull()
+        p = { ...p, lastAt: new Date().toISOString() }
         await writeProgress(p)
         setProgress(p)
+        setError('')
+        return current.current
+      } catch (e) {
+        setError(cloudError(e))
+        return null
       }
-      await pull()
-      p = { ...p, lastAt: new Date().toISOString() }
-      await writeProgress(p)
-      setProgress(p)
-      setError('')
-    } catch (e) {
-      setError(cloudError(e))
-    } finally {
+    })()
+    syncFlight.current = operation.finally(() => {
       lock.current = false
       setBusy(false)
-    }
+      syncFlight.current = null
+    })
+    return syncFlight.current
   }, [client, config, userId, commit])
   useEffect(() => {
     if (!config?.enabled || !userId) return
@@ -177,6 +191,47 @@ export function CloudProvider({ children }: { children: ReactNode }) {
     const saved = await writeCloudConfig(parsed)
     setConfig(saved)
     setError('')
+  }
+  async function syncPending() {
+    // A record can commit after an existing sync has already selected its batch.
+    // Wait for that operation, then start a new pass rather than returning its old result.
+    if (syncFlight.current) await syncFlight.current
+    return sync()
+  }
+  async function prepareScanner(operator: string) {
+    if (!client || !userId || !config)
+      throw new Error('Login Supabase terlebih dahulu.')
+    if (lock.current)
+      throw new Error('Tunggu sinkronisasi selesai, lalu coba lagi.')
+    if (!operator.trim()) throw new Error('Isi nama operator yang bertugas.')
+    lock.current = true
+    setBusy(true)
+    try {
+      const m = await fetchMember(client).catch((e) => {
+        throw new Error(cloudError(e))
+      })
+      current.current = await commit((s) => {
+        if (s.records.length && s.config.station !== m.station_id)
+          throw new Error(
+            'Tablet berisi catatan stasiun lain. Ekspor dan rekonsiliasi dahulu; gunakan akun sesuai stasiun asal.',
+          )
+        s.config.operator = operator.trim()
+        s.config.station = m.station_id
+        audit(
+          s,
+          'prepare-scanner',
+          `Pemindai Supabase disiapkan pada ${m.station_id}`,
+        )
+        return structuredClone(s)
+      })
+      setMember(m)
+      const saved = await writeCloudConfig({ ...config, enabled: true })
+      setConfig(saved)
+      setError('')
+    } finally {
+      lock.current = false
+      setBusy(false)
+    }
   }
   async function check() {
     if (!client)
@@ -279,6 +334,8 @@ export function CloudProvider({ children }: { children: ReactNode }) {
         login,
         logout,
         sync,
+        syncPending,
+        prepareScanner,
         publish,
       }}
     >

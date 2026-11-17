@@ -37,7 +37,7 @@ Jika personel kurang: satu jalur reguler, satu VIP, satu bantuan. Aktifkan regul
 
 ## Gangguan dan penutupan
 
-- Kamera ditolak/gagal: tutup kamera lalu cari kode/nama/instansi. QR undangan berbeda dengan QR check-in; minta tamu menampilkan QR check-in atau gunakan pencarian.
+- Kamera ditolak/gagal: tutup kamera lalu gunakan Pindai foto QR atau cari kode/nama/instansi. QR check-in dan QR undangan dari domain resmi sama-sama diterima; QR asing ditolak. Untuk Supabase, siapkan login/operator dan muat roster melalui panel pemindai di halaman petugas sebelum jam registrasi.
 - Gagal tersimpan/ruang habis: jangan menganggap hadir sudah tercatat. Coba ulang, ekspor yang masih dapat dibaca; jika perlu pindah T06. Jangan hapus storage/profil/origin. Kertas mencatat kode, nama aktual, waktu kedatangan WIB, stasiun, operator. Rekonsiliasi melalui input kertas T05; ubah stasiun/operator sesuai asal sebelum input dan kembalikan sesudahnya.
 - Penutupan: minta **ekspor final setiap perangkat yang digunakan**, termasuk T05 dan T06 bila aktif. Cocokkan label fisik, waktu ekspor, dan jumlah. Jangan menandai meja yang dipakai sebagai tidak digunakan hanya untuk menghilangkan Sementara.
 - Impor ulang aman. Konflik ID membatalkan batch; pertahankan berkas asli dan telusuri sumber. Dua tablet/slot sama dihitung sekali, tetapi semua catatan disimpan. Periksa nama berbeda, jam di luar tanggal acara, dan alternatif waktu. Koreksi melalui pilih efektif/batalkan dengan alasan. Untuk waktu salah, batalkan catatan salah lalu masukkan observasi kertas yang benar.

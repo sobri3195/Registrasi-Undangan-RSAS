@@ -1,137 +1,9 @@
 import { test, expect } from '@playwright/test'
-import type { BrowserContext, Page } from '@playwright/test'
+import type { Page } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 
-// HTTP integration fixture; SQL/RLS is exercised separately against PostgreSQL/PGlite.
-// This does not contact a production Supabase project or use operational data.
-const project = 'https://testproject.supabase.co'
-const users = {
-  'coordinator@example.invalid': {
-    id: '00000000-0000-4000-8000-000000000001',
-    role: 'coordinator',
-    station_id: 'T05',
-  },
-  'operator@example.invalid': {
-    id: '00000000-0000-4000-8000-000000000002',
-    role: 'operator',
-    station_id: 'T02',
-  },
-}
-type Package = {
-  payload: { package_version: number; slots: Record<string, unknown>[] }
-}
-type RecordRow = {
-  seq: number
-  payload: Record<string, unknown>
-  received_at: string
-}
-function fixture() {
-  const packages: Package[] = [],
-    records: RecordRow[] = []
-  let failPush = false
-  return {
-    packages,
-    records,
-    failNextPush: () => {
-      failPush = true
-    },
-    install: async (context: BrowserContext) => {
-      await context.route(`${project}/**`, async (route) => {
-        const request = route.request(),
-          url = new URL(request.url())
-        const headers = {
-          'access-control-allow-origin': 'http://localhost:4173',
-          'access-control-allow-headers':
-            'authorization,apikey,x-client-info,content-type,prefer,range,x-supabase-api-version,accept-profile,content-profile',
-          'access-control-allow-methods': 'GET,POST,OPTIONS',
-        }
-        const respond = (data: unknown, status = 200) =>
-          route.fulfill({
-            status,
-            headers,
-            contentType: 'application/json',
-            body: JSON.stringify(data),
-          })
-        if (request.method() === 'OPTIONS')
-          return route.fulfill({ status: 204, headers })
-        if (url.pathname === '/auth/v1/settings')
-          return respond({ external: { email: true } })
-        if (url.pathname === '/auth/v1/token') {
-          const input = request.postDataJSON() as { email: keyof typeof users }
-          const u = users[input.email]
-          if (!u) return respond({ msg: 'Invalid login credentials' }, 400)
-          const exp = Math.floor(Date.now() / 1000) + 3600
-          const jwt = `${Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url')}.${Buffer.from(JSON.stringify({ sub: u.id, role: 'authenticated', email: input.email, exp })).toString('base64url')}.synthetic-signature`
-          return respond({
-            access_token: jwt,
-            refresh_token: 'synthetic-refresh-token',
-            token_type: 'bearer',
-            expires_in: 3600,
-            expires_at: exp,
-            user: {
-              id: u.id,
-              aud: 'authenticated',
-              role: 'authenticated',
-              email: input.email,
-              app_metadata: { provider: 'email' },
-              user_metadata: {},
-              created_at: new Date().toISOString(),
-            },
-          })
-        }
-        if (url.pathname === '/auth/v1/logout')
-          return route.fulfill({ status: 204, headers })
-        if (url.pathname === '/rest/v1/rpc/rsas_status') {
-          const token =
-            request.headers().authorization?.replace('Bearer ', '') || ''
-          const subject = JSON.parse(
-            Buffer.from(token.split('.')[1], 'base64url').toString(),
-          ).sub
-          const u = Object.values(users).find((user) => user.id === subject)
-          return u
-            ? respond({ role: u.role, station_id: u.station_id })
-            : respond({ message: 'RSAS_MEMBER_REQUIRED' }, 403)
-        }
-        if (url.pathname === '/rest/v1/rpc/rsas_publish_package') {
-          const p = request.postDataJSON().p_package
-          if (
-            !packages.some(
-              (x) => x.payload.package_version === p.package_version,
-            )
-          )
-            packages.push({ payload: p })
-          return respond(null)
-        }
-        if (url.pathname === '/rest/v1/rpc/rsas_push_records') {
-          if (failPush) {
-            failPush = false
-            return respond({ message: 'temporary unavailable' }, 503)
-          }
-          const payload = request.postDataJSON()
-          for (const record of payload.p_records as Record<string, unknown>[]) {
-            expect(record).not.toHaveProperty('token')
-            expect(record).not.toHaveProperty('tokenHash')
-            if (!records.some((r) => r.payload.record_id === record.record_id))
-              records.push({
-                seq: records.length + 1,
-                payload: record,
-                received_at: new Date().toISOString(),
-              })
-          }
-          return respond(payload.p_records.length)
-        }
-        if (url.pathname === '/rest/v1/rsas_packages') return respond(packages)
-        if (url.pathname === '/rest/v1/rsas_records') {
-          const cursor = Number(
-            (url.searchParams.get('seq') || 'gt.0').slice(3),
-          )
-          return respond(records.filter((r) => r.seq > cursor))
-        }
-        return respond({ message: 'Unexpected fixture request' }, 500)
-      })
-    },
-  }
-}
+import { fixture, project } from './helpers/supabase'
+
 async function localSettings(page: Page, station: string) {
   await page.goto('/pengaturan')
   await page
@@ -213,16 +85,14 @@ test('optional authenticated cloud sync preserves failed uploads offline and mer
   await op.getByLabel('Cari undangan', { exact: true }).fill('DEMO-001')
   await op.getByRole('button', { name: /DEMO-001/ }).click()
   await op.getByLabel('Nama orang yang datang').fill('Perwakilan Sintetis')
+  api.failNextPush()
   await op.getByRole('button', { name: 'Catat hadir', exact: true }).click()
   await expect(
     op.getByRole('heading', { name: 'Hadir tercatat di tablet ini' }),
   ).toBeVisible()
   await op.getByRole('button', { name: 'Tamu berikutnya' }).click()
   await op.getByRole('link', { name: 'Atur Supabase' }).click()
-  api.failNextPush()
-  await op
-    .getByRole('button', { name: 'Sinkronkan sekarang', exact: true })
-    .click()
+
   await expect(
     op.getByRole('region', { name: 'Status Supabase' }),
   ).toContainText('Koneksi Supabase belum berhasil')

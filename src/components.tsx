@@ -63,11 +63,13 @@ export function FileInput({
   label,
   accept,
   multiple = false,
+  disabled = false,
   onFiles,
 }: {
   label: string
   accept: string
   multiple?: boolean
+  disabled?: boolean
   onFiles: (files: File[]) => void
 }) {
   return (
@@ -78,6 +80,7 @@ export function FileInput({
         type="file"
         accept={accept}
         multiple={multiple}
+        disabled={disabled}
         onChange={(e) => {
           if (e.target.files?.length) onFiles(Array.from(e.target.files))
           e.target.value = ''
