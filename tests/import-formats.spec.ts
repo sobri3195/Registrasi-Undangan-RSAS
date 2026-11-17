@@ -114,9 +114,14 @@ test('CSV renamed as JSON is detected and 71 rows import only through the CSV pr
   await expect(
     page.getByRole('heading', { name: 'Paket roster belum tersedia' }),
   ).toBeVisible()
+  await page.getByRole('button', { name: 'Pindai QR', exact: true }).click()
+  await expect(page.getByRole('alert')).toContainText(
+    'Lengkapi nama operator dan muat roster',
+  )
   await expect(
-    page.getByRole('button', { name: 'Pindai QR', exact: true }),
-  ).toBeDisabled()
+    page.getByRole('region', { name: 'Persiapan pemindai Supabase' }),
+  ).toBeVisible()
+  await expect(page.locator('video')).toHaveCount(0)
 })
 
 test('malformed JSON gives repair guidance without exposing its content', async ({

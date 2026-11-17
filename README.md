@@ -58,6 +58,14 @@ Backend opsional memakai `VITE_SUPABASE_URL` dan `VITE_SUPABASE_PUBLISHABLE_KEY`
 9. Tinjau jam/nama berbeda atau catatan ganda. Pilih catatan efektif atau batalkan catatan dengan alasan. Semua aksi asli dipertahankan. Koreksi jam dapat dilakukan dengan membatalkan catatan salah lalu memasukkan waktu observasi dari kertas.
 10. Rekonsiliasi setiap tablet yang digunakan, tandai tablet yang benar-benar tidak dipakai, lalu ekspor CSV dan backup master privat.
 
+## Pemindai langsung dari Supabase
+
+Di `/petugas`, gunakan panel **Hubungkan pemindai ke Supabase**. Bila konfigurasi Vercel belum tersedia, URL/publishable key dapat disimpan di panel itu. Login dengan akun petugas, isi nama operator, lalu tekan **Hubungkan & muat roster Supabase**. Label stasiun mengikuti penugasan akun. SQL, akun dan `rsas_members` harus disiapkan pemilik proyek dahulu; panel menyediakan tautan SQL Editor dan unduhan SQL, tanpa jalur menaikkan peran sendiri.
+
+T05 tetap mengesahkan daftar, membuat paket dan memublikasikannya. Setelah roster termuat, petugas dapat memindai **QR check-in atau QR undangan HTTPS dari domain resmi**. Token dan kode undangan dicocokkan dengan roster; QR asing tidak dibuka. Saat online dengan cloud aktif, pemindai menyinkronkan roster sebelum pencocokan dan mengirim catatan setelah konfirmasi **Catat hadir**. Saat offline, paket lokal tetap digunakan dan transaksi menunggu pengiriman.
+
+Jika kamera gagal, gunakan **Pindai foto QR** (PNG/JPEG/WebP, maksimal 10 MB) atau pencarian. Gambar didekode lokal dan tidak diunggah ke Supabase. Draf tidak otomatis menjadi aktif dan tidak menghasilkan QR. Lihat [panduan aktivasi pemindai](docs/AKTIFKAN_PEMINDAI.md) jika tombol belum siap, backend belum dipasang, atau Vercel masih menampilkan versi lama.
+
 ## Jika CSV terbaca sebagai JSON
 
 `roster-draft.csv` adalah **daftar undangan**, bukan paket tablet atau backup. Pada **T05**, buka **Koordinator → Daftar undangan → Impor CSV**, pilih berkas, periksa pratinjau, lalu impor sebagai draf. Sahkan setiap slot sebelum menerbitkan kartu/paket.

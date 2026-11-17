@@ -60,6 +60,41 @@ export function parseInvitation(fragment: string) {
     )
   return { token: t, code: c }
 }
+export function parseScannerQR(
+  value: string,
+  origins: string[],
+): { token: string; code?: string } {
+  const raw = value.trim()
+  if (raw.startsWith('RSAS-CI1:')) return { token: parseCheckin(raw) }
+  let url: URL
+  try {
+    url = new URL(raw)
+  } catch {
+    throw new Error(
+      'QR tidak dikenali. Gunakan QR check-in atau kartu undangan RSAS.',
+    )
+  }
+  const allowed = origins.flatMap((origin) => {
+    try {
+      return [new URL(origin).origin]
+    } catch {
+      return []
+    }
+  })
+  if (
+    url.protocol !== 'https:' ||
+    url.username ||
+    url.password ||
+    url.search ||
+    !allowed.includes(url.origin) ||
+    !['/rsvp', '/rsvp/'].includes(url.pathname)
+  ) {
+    throw new Error(
+      'Tautan QR bukan undangan dari domain resmi. Gunakan QR RSAS atau pencarian manual.',
+    )
+  }
+  return parseInvitation(url.hash)
+}
 export function invitationUrl(slot: Slot, origin: string) {
   const url = new URL(origin)
   if (

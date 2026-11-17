@@ -23,6 +23,7 @@ import { StoreProvider } from './context'
 import { CloudProvider } from './CloudProvider'
 import { CloudStatus } from './CloudSettings'
 import { useCloud } from './cloud-store'
+import UpdateNotice from './UpdateNotice'
 import { useStore } from './store'
 import { useOffline } from './offline'
 import Dashboard from './Dashboard'
@@ -139,6 +140,7 @@ export function Shell() {
             <span>RSAS · Registrasi Undangan</span>
             <span>19 November 2026 · Semua waktu tampilan dalam WIB</span>
           </footer>
+          <UpdateNotice />
         </main>
       </div>
     </div>

@@ -9,6 +9,10 @@ export default function Scanner({
   onClose: () => void
 }) {
   const video = useRef<HTMLVideoElement>(null)
+  const callback = useRef(onScan)
+  useEffect(() => {
+    callback.current = onScan
+  }, [onScan])
   const [error, setError] = useState('')
   useEffect(() => {
     let stream: MediaStream | undefined,
@@ -39,7 +43,14 @@ export default function Scanner({
         function scan(now: number) {
           if (disposed) return
           const v = video.current
-          if (v && ctx && v.readyState >= 2 && now - last > 150) {
+          if (
+            v &&
+            ctx &&
+            v.readyState >= 2 &&
+            v.videoWidth > 0 &&
+            v.videoHeight > 0 &&
+            now - last > 150
+          ) {
             last = now
             canvas.width = Math.min(v.videoWidth, 960)
             canvas.height = (v.videoHeight * canvas.width) / v.videoWidth
@@ -49,7 +60,7 @@ export default function Scanner({
               inversionAttempts: 'attemptBoth',
             })
             if (code) {
-              onScan(code.data)
+              callback.current(code.data)
               return
             }
           }
@@ -70,7 +81,7 @@ export default function Scanner({
       cancelAnimationFrame(frame)
       stream?.getTracks().forEach((t) => t.stop())
     }
-  }, [onScan])
+  }, [])
   return (
     <div className="scanner">
       <video
@@ -83,7 +94,8 @@ export default function Scanner({
         <p role="alert">{error}</p>
       ) : (
         <p>
-          Arahkan QR check-in ke kamera. Cocokkan identitas sebelum mencatat.
+          Arahkan QR check-in atau kartu undangan resmi ke kamera. Cocokkan
+          identitas sebelum mencatat.
         </p>
       )}
       <button className="secondary" onClick={onClose}>

@@ -65,6 +65,8 @@ URL dan key juga bisa dimasukkan langsung melalui **Pengaturan → Supabase** pa
 5. Catat tamu di T02, tekan **Sinkronkan sekarang**, lalu sinkronkan T05. Pastikan satu kehadiran terlihat, waktu sinkron tampil dan antrean perangkat kosong. Pemindahan satu tamu antarjalur tetap menghasilkan satu kehadiran unik, dengan seluruh jejak tersimpan.
 6. Uji mode pesawat pada setiap tablet: check-in harus tetap tersimpan lokal; antrean baru dikonfirmasi setelah server menerima pengiriman ketika kembali online. Status sukses check-in berarti tersimpan di perangkat, bukan otomatis sudah tersimpan di server.
 
+Alternatif langsung di halaman petugas: pada `/petugas`, login di panel **Hubungkan pemindai ke Supabase**, isi nama operator, lalu tekan **Hubungkan & muat roster Supabase**. Stasiun otomatis mengikuti akun yang ditugaskan, tanpa mengubah catatan lama. Jika perangkat berisi catatan stasiun lain, persiapan ditolak sampai diekspor/ditangani. Setelah siap, QR undangan resmi maupun QR check-in dapat dipindai dari kamera atau foto. Konfirmasi hadir memicu pengiriman cloud segera; pembaruan berkala 15 detik tetap berjalan sebagai cadangan.
+
 Token akses/refresh login disimpan SDK pada storage browser proyek tersebut. Password tidak disimpan aplikasi. Sesi, konfigurasi cloud dan progres antrean tidak dimasukkan ke backup master/ekspor stasiun. Gunakan profil kerja dan penguncian perangkat. Bila cloud gagal, jangan hapus IndexedDB; ekspor JSON dan gunakan prosedur lokal.
 
 ## Cakupan dan rekonsiliasi
