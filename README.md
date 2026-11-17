@@ -56,6 +56,14 @@ Variabel `VITE_*` bersifat publik. Jangan mengisinya dengan rahasia atau data ro
 9. Tinjau jam/nama berbeda atau catatan ganda. Pilih catatan efektif atau batalkan catatan dengan alasan. Semua aksi asli dipertahankan. Koreksi jam dapat dilakukan dengan membatalkan catatan salah lalu memasukkan waktu observasi dari kertas.
 10. Rekonsiliasi setiap tablet yang digunakan, tandai tablet yang benar-benar tidak dipakai, lalu ekspor CSV dan backup master privat.
 
+## Jika CSV terbaca sebagai JSON
+
+`roster-draft.csv` adalah **daftar undangan**, bukan paket tablet atau backup. Pada **T05**, buka **Koordinator → Daftar undangan → Impor CSV**, pilih berkas, periksa pratinjau, lalu impor sebagai draf. Sahkan setiap slot sebelum menerbitkan kartu/paket.
+
+Setelah pengesahan, buka **Paket & penggabungan → Buat & unduh paket baru**. Berkas **JSON hasil penerbitan** itulah yang dipilih melalui **Impor paket roster** di tablet petugas. Penggabungan kehadiran menerima JSON dari **Ekspor catatan tablet**, sedangkan pemulihan menerima JSON dari **Backup master**. Mengubah ekstensi `.csv` menjadi `.json` tidak mengonversi format atau membuat token check-in.
+
+Aplikasi mendeteksi CSV pada ketiga jalur impor JSON dan menunjukkan petunjuk serta tautan ke impor CSV. JSON rusak ditolak dengan pesan perbaikan tanpa menampilkan potongan isi berkas. Ukuran maksimum tetap 5 MB. Penolakan format tidak mengubah data tersimpan.
+
 ## Offline dan ketahanan data
 
 IndexedDB berskema versi menyimpan keadaan lokal secara atomik. DB v2 menambahkan indeks unik gabungan acara/slot untuk kehadiran lokal aktif. ID perangkat stabil per origin/profil browser; catatan mempunyai UUID. Penghapusan data browser/instalasi atau perpindahan origin dapat menghilangkan akses ke data. Jangan menggunakan mode privat.
